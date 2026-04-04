@@ -104,7 +104,7 @@ VALUES
 (1016, 108, 'Harland Ranking', '1911 Alveries Circle, Markham, ON', 'ON-1016-1111', 'service'),
 
 --chain 2
-(1001, 101, 'Emma Folley', '71 Grave Street, Montreal, QC', 'QC-2001-1111', 'manager'),
+(2001, 101, 'Emma Folley', '71 Grave Street, Montreal, QC', 'QC-2001-1111', 'manager'),
 (2002, 201, 'Lucas Gagnon', '88 Rue Ontario, Montreal, QC', 'QC-2002-1111', 'service'),
 (2003, 202, 'Camille Roy', '41 Rue Cartier, Montreal, QC', 'QC-2003-1111', 'manager'),
 (2004, 202, 'Nathan Belanger', '72 Rue Logan, Montreal, QC', 'QC-2004-1111', 'chef'),
@@ -235,7 +235,7 @@ VALUES
 (102, 204, 137, 'twin', 'sea', false, true),
 (102, 205, 69, 'single', 'mountain', true, true),
 (103, 201, 338, 'penthouse', 'city', true, false),
-(103, 202, 50, 'single', 'mountain', true, false),
+(103, 202, 105, 'single', 'mountain', true, false),
 (103, 203, 132, 'penthouse', 'city', false, false),
 (103, 204, 372, 'single', 'sea', false, true),
 (103, 205, 56, 'twin', 'garden', false, true),
