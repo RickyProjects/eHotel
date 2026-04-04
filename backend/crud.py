@@ -136,34 +136,40 @@ def get_available_rooms(start_date, end_date):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT r.*
-        FROM room r
-        WHERE r.is_damaged = FALSE
-        AND NOT EXISTS (
-            SELECT 1
-            FROM booking b
-            WHERE b.hotel_id = r.hotel_id
-              AND b.room_number = r.room_number
-              AND b.status IN ('pending', 'confirmed')
-              AND b.start_date < %s
-              AND %s < b.end_date
-        )
-        AND NOT EXISTS (
-            SELECT 1
-            FROM renting rt
-            WHERE rt.hotel_id = r.hotel_id
-              AND rt.room_number = r.room_number
-              AND rt.status IN ('confirmed', 'completed')
-              AND rt.start_date < %s
-              AND %s < rt.end_date
-        );
-    """, (end_date, start_date, end_date, start_date))
+    try:
+        if start_date >= end_date:
+            return {"message": "start_date must be before end_date."}
 
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return rows
+        cur.execute("""
+            SELECT r.*
+            FROM room r
+            WHERE r.is_damaged = FALSE
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM booking b
+                  WHERE b.hotel_id = r.hotel_id
+                    AND b.room_number = r.room_number
+                    AND b.status IN ('pending', 'confirmed')
+                    AND b.start_date < %s
+                    AND %s < b.end_date
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM renting rt
+                  WHERE rt.hotel_id = r.hotel_id
+                    AND rt.room_number = r.room_number
+                    AND rt.status IN ('confirmed', 'completed')
+                    AND rt.start_date < %s
+                    AND %s < rt.end_date
+              )
+            ORDER BY r.hotel_id, r.room_number;
+        """, (end_date, start_date, end_date, start_date))
+
+        return cur.fetchall()
+
+    finally:
+        cur.close()
+        conn.close()
 
 def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None, amenity=None, start_date=None, end_date=None):
     conn = get_connection()
@@ -244,37 +250,40 @@ def cancel_booking(booking_id):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("""
-        SELECT status
-        FROM booking
-        WHERE booking_id = %s
-    """, (booking_id,))
+    try:
+        cur.execute("""
+            SELECT status
+            FROM booking
+            WHERE booking_id = %s
+        """, (booking_id,))
+        booking = cur.fetchone()
 
-    booking = cur.fetchone()
+        if not booking:
+            return {"message": "booking_id does not exist."}
 
-    if not booking:
+        status = booking["status"]
+
+        if status == "cancelled":
+            return {"message": "Booking is already cancelled."}
+
+        if status == "confirmed":
+            return {"message": "Cannot cancel a booking that has already been checked in."}
+
+        cur.execute("""
+            UPDATE booking
+            SET status = 'cancelled'
+            WHERE booking_id = %s
+        """, (booking_id,))
+
+        conn.commit()
+        return {"message": "Booking cancelled successfully."}
+
+    except Exception as e:
+        conn.rollback()
+        return {"message": f"Error cancelling booking: {str(e)}"}
+
+    finally:
         cur.close()
         conn.close()
-        return {"message": "booking_id does not exist."}
-
-    status = booking["status"]
-
-    if status == 'cancelled':
-        cur.close()
-        conn.close()
-        return {"message": "Booking is already cancelled."}
-
-    cur.execute("""
-        UPDATE booking
-        SET status = 'cancelled'
-        WHERE booking_id = %s
-    """, (booking_id,))
-
-    conn.commit()
-
-    cur.close()
-    conn.close()
-
-    return {"message": "Booking cancelled successfully."}
 
 # -----DELETE SECTION-----

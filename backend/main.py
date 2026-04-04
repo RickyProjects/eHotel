@@ -33,8 +33,11 @@ def get_filter_rooms(
     start_date:date = None,
     end_date:date = None
 ):
-    return crud.get_filtered_rooms(min_price, max_price, capacity, view, amenity, start_date, end_date)
-
+    try:
+        return crud.get_filtered_rooms(min_price, max_price, capacity, view, amenity, start_date, end_date)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.post("/bookings")
 def create_booking(customer_id: int, hotel_id: int, room_number: int, start_date: str, end_date: str):
     try:
