@@ -1,4 +1,3 @@
-CREATE INDEX idx_room_price ON room(price);
 
 CREATE INDEX idx_room_search
 ON room(hotel_id, price, room_capacity);

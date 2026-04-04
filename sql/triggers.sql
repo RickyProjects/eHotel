@@ -1,3 +1,8 @@
+DROP TRIGGER IF EXISTS trg_check_manager_same_hotel ON hotel;
+DROP TRIGGER IF EXISTS trg_prevent_overlapping_booking ON booking;
+DROP TRIGGER IF EXISTS trg_prevent_overlapping_renting ON renting;
+
+--Trigger function 1
 CREATE OR REPLACE FUNCTION check_manager_same_hotel()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -19,39 +24,59 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_check_manager_same_hotel ON hotel;
-
-CREATE TRIGGER trg_check_manager_same_hotel
-BEFORE INSERT OR UPDATE OF manager_id, hotel_id
-ON hotel
-FOR EACH ROW
-EXECUTE FUNCTION check_manager_same_hotel();
-
-CREATE OR REPLACE FUNCTION prevent_overlapping_booking()
+--Trigger function 2
+CREATE OR REPLACE FUNCTION check_room_availability()
 RETURNS TRIGGER AS $$
 BEGIN
     IF EXISTS (
-        SELECT 1
+        SELECT *
         FROM booking b
         WHERE b.hotel_id = NEW.hotel_id
           AND b.room_number = NEW.room_number
           AND b.status IN ('pending', 'confirmed')
-          AND b.booking_id <> COALESCE(NEW.booking_id, -1)
-          AND b.start_date < NEW.end_date
-          AND NEW.start_date < b.end_date
+          AND b.start_date <= NEW.end_date
+          AND NEW.start_date <= b.end_date
     ) THEN
-        RAISE EXCEPTION 'Overlapping booking exists for this room.';
+        RAISE EXCEPTION 'Room booked.';
+    END IF;
+    
+    IF EXISTS (
+        SELECT * 
+        FROM renting rg 
+        WHERE rg.hotel_id = NEW.hotel_id
+            AND rg.room_number = NEW.room_number
+            AND rg.status IN ('pending', 'confirmed')
+            AND rg.start_date <= NEW.end_date
+            AND NEW.start_date <= rg.end_date
+    ) THEN
+        RAISE EXCEPTION 'Room rented.';
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_prevent_overlapping_booking ON booking;
+--Trigger function 3
 
+
+--Trigger definition 1
+CREATE TRIGGER trg_check_manager_same_hotel
+BEFORE INSERT OR UPDATE OF manager_id, hotel_id
+ON hotel
+FOR EACH ROW
+EXECUTE FUNCTION check_manager_same_hotel();
+
+--Trigger definition 2
 CREATE TRIGGER trg_prevent_overlapping_booking
-BEFORE INSERT OR UPDATE OF hotel_id, room_number, start_date, end_date, status
+BEFORE INSERT 
 ON booking
 FOR EACH ROW
-WHEN (NEW.status IN ('pending', 'confirmed'))
-EXECUTE FUNCTION prevent_overlapping_booking();
+EXECUTE FUNCTION check_room_availability();
+
+--Trigger definition 3
+
+CREATE TRIGGER trg_prevent_overlapping_renting
+BEFORE INSERT 
+ON renting
+FOR EACH ROW
+EXECUTE FUNCTION check_room_availability();
