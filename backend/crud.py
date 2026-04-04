@@ -35,18 +35,34 @@ def create_booking(customer_id, hotel_id, room_number, start_date, end_date):
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT COALESCE(MAX(booking_id), 0) + 1 AS next_id FROM booking;")
-    next_booking_id = cur.fetchone()["next_id"]
-    
-    cur.execute("""
-        INSERT INTO booking (booking_id, customer_id, hotel_id, room_number, start_date, end_date, booking_date, status)
-        VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'pending')
-    """, (next_booking_id, customer_id, hotel_id, room_number, start_date, end_date))
+    try:
+        cur.execute("SELECT COALESCE(MAX(booking_id), 0) + 1 AS next_id FROM booking;")
+        next_booking_id = cur.fetchone()["next_id"]
+        
+        cur.execute("""
+            INSERT INTO booking (
+                booking_id, customer_id, hotel_id, room_number,
+                start_date, end_date, booking_date, status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'pending')
+        """, (next_booking_id, customer_id, hotel_id, room_number, start_date, end_date))
 
-    conn.commit()
+        conn.commit()
 
-    cur.close()
-    conn.close()
+        return {
+            "message": "Booking created successfully.",
+            "booking_id": next_booking_id
+        }
+
+    except Exception as e:
+        conn.rollback()
+        return {
+            "message": f"Error creating booking: {str(e)}"
+        }
+
+    finally:
+        cur.close()
+        conn.close()
 
 #this is an insertion and an update
 def check_in(booking_id):
