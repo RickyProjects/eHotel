@@ -90,29 +90,29 @@ CREATE TABLE amenities(
 
 CREATE TABLE booking(
 	booking_id INTEGER PRIMARY KEY,
-	customer_id INTEGER NOT NULL,
-	hotel_id INTEGER NOT NULL,
-	room_number INTEGER NOT NULL,
+	customer_id INTEGER,
+	hotel_id INTEGER,
+	room_number INTEGER,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
 	booking_date DATE NOT NULL,
-	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled', 'archived')),
 	CHECK (start_date < end_date),
-	FOREIGN KEY (customer_id) REFERENCES customer(customer_id),
-    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number)
+	FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE SET NULL,
+    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number) ON DELETE SET NULL
 );
 
 CREATE TABLE renting(
 	renting_id INTEGER PRIMARY KEY,
-	customer_id INTEGER NOT NULL,
-	hotel_id INTEGER NOT NULL,
-	room_number INTEGER NOT NULL,
+	customer_id INTEGER,
+	hotel_id INTEGER,
+	room_number INTEGER,
 	start_date DATE NOT NULL,
 	end_date DATE NOT NULL,
 	checkin_date DATE NOT NULL,
-	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled', 'archived')),
 	CHECK (start_date < end_date),
 	CHECK (checkin_date >= start_date),
-	FOREIGN KEY (customer_id) REFERENCES customer(customer_id),
-    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number)
+	FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE SET NULL,
+    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number) ON DELETE SET NULL
 );

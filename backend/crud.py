@@ -115,7 +115,7 @@ def check_in(booking_id):
             renting_id, customer_id, hotel_id, room_number,
             start_date, end_date, checkin_date, status
         )
-        VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'completed')
+        VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'archived')
     """, (next_renting_id, customer_id, hotel_id, room_number, start_date, end_date))
 
     # update booking
@@ -174,7 +174,7 @@ def get_available_rooms(start_date, end_date):
                   FROM renting rt
                   WHERE rt.hotel_id = r.hotel_id
                     AND rt.room_number = r.room_number
-                    AND rt.status IN ('confirmed', 'completed')
+                    AND rt.status IN ('confirmed', 'archived')
                     AND rt.start_date < %s
                     AND %s < rt.end_date
               )
@@ -243,7 +243,7 @@ def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None,
                 FROM renting rt
                 WHERE rt.hotel_id = r.hotel_id
                   AND rt.room_number = r.room_number
-                  AND rt.status IN ('confirmed', 'completed')
+                  AND rt.status IN ('confirmed', 'archived')
                   AND rt.start_date < %s
                   AND %s < rt.end_date
             )
