@@ -92,7 +92,7 @@ function BookingPage() {
               required
             />
 
-            <label>Start Date</label>
+            <label>Check-in Date</label>
             <input
               type="date"
               name="start_date"
@@ -101,7 +101,7 @@ function BookingPage() {
               required
             />
 
-            <label>End Date</label>
+            <label>Check-out Date</label>
             <input
               type="date"
               name="end_date"
