@@ -99,7 +99,12 @@ CREATE TABLE booking(
 	status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'confirmed', 'cancelled', 'archived')),
 	CHECK (start_date < end_date),
 	FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE SET NULL,
-    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number) ON DELETE SET NULL
+    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number) ON DELETE SET NULL,
+
+    CHECK (
+        status = 'archived'
+        OR (customer_id IS NOT NULL AND hotel_id IS NOT NULL AND room_number IS NOT NULL)
+    )
 );
 
 CREATE TABLE renting(
@@ -114,5 +119,11 @@ CREATE TABLE renting(
 	CHECK (start_date < end_date),
 	CHECK (checkin_date >= start_date),
 	FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE SET NULL,
-    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number) ON DELETE SET NULL
+    FOREIGN KEY (hotel_id, room_number) REFERENCES room(hotel_id, room_number) ON DELETE SET NULL,
+
+    CHECK (
+        status = 'archived'
+        OR (customer_id IS NOT NULL AND hotel_id IS NOT NULL AND room_number IS NOT NULL)
+    )
 );
+
