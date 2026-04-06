@@ -65,74 +65,115 @@ def create_booking(customer_id, hotel_id, room_number, start_date, end_date):
         conn.close()
 
 #this is an insertion and an update
-def check_in(booking_id):
+def get_all_bookings():
     conn = get_connection()
     cur = conn.cursor()
 
-    # get booking info
-    cur.execute("""
-        SELECT customer_id, hotel_id, room_number, start_date, end_date, status
-        FROM booking
-        WHERE booking_id = %s
-    """, (booking_id,))
+    cur.execute("SELECT booking_id, customer_id, hotel_id, room_number, start_date, end_date, booking_date, status FROM booking ORDER BY booking_id;")
 
-    booking = cur.fetchone()
-
-    if not booking:
-        cur.close()
-        conn.close()
-        return {"message": "booking_id does not exist."}
-
-    customer_id = booking["customer_id"]
-    hotel_id = booking["hotel_id"]
-    room_number = booking["room_number"]
-    start_date = booking["start_date"]
-    end_date = booking["end_date"]
-    status = booking["status"]
-
-    if status == 'cancelled':
-        cur.close()
-        conn.close()
-        return {"message": "Booking was previously cancelled."}
-
-    if status != 'pending':
-        cur.close()
-        conn.close()
-        return {"message": "Booking has already been confirmed."}
-    
-    if date.today() < start_date:
-        cur.close()
-        conn.close()
-        return {"message": "Cannot check in yet, the booking start date has not arrived."}
-
-    # gets next renting_id
-    cur.execute("SELECT COALESCE(MAX(renting_id), 0) + 1 AS next_id FROM renting;")
-    next_renting_id = cur.fetchone()["next_id"]
-
-    # insert into renting
-    cur.execute("""
-        INSERT INTO renting (
-            renting_id, customer_id, hotel_id, room_number,
-            start_date, end_date, checkin_date, status
-        )
-        VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'archived')
-    """, (next_renting_id, customer_id, hotel_id, room_number, start_date, end_date))
-
-    # update booking
-    cur.execute("""
-        UPDATE booking
-        SET status = 'confirmed'
-        WHERE booking_id = %s
-    """, (booking_id,))
-
-    conn.commit()
+    rows = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    return {"message": "Check-in successful"}
+    return rows
+
+
+def get_all_rentings():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT renting_id, customer_id, hotel_id, room_number, start_date, end_date, checkin_date, status FROM renting ORDER BY renting_id;")
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return rows
+
+def check_in(booking_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT customer_id, hotel_id, room_number, start_date, end_date, status
+            FROM booking
+            WHERE booking_id = %s
+        """, (booking_id,))
+        booking = cur.fetchone()
+
+        if not booking:
+            return {"message": "booking_id does not exist."}
+
+        if booking["status"] == "cancelled":
+            return {"message": "Booking was previously cancelled."}
+
+        if booking["status"] == "confirmed":
+            return {"message": "Booking has already been checked in."}
+
+        if booking["status"] != "pending":
+            return {"message": f"Invalid booking status: {booking['status']}"}
+        
+        if date.today() < booking["start_date"]:
+            return {"message": "Cannot check in before booking start date."}
+
+        cur.execute("SELECT COALESCE(MAX(renting_id), 0) + 1 AS next_id FROM renting;")
+        next_renting_id = cur.fetchone()["next_id"]
+
+        # update booking first so triggers no longer see it as an active booking conflict
+        cur.execute("""
+            UPDATE booking
+            SET status = 'confirmed'
+            WHERE booking_id = %s
+        """, (booking_id,))
+
+        # now insert renting
+        cur.execute("""
+            INSERT INTO renting (
+                renting_id, customer_id, hotel_id, room_number,
+                start_date, end_date, checkin_date, status
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, CURRENT_DATE, 'archived')
+        """, (
+            next_renting_id,
+            booking["customer_id"],
+            booking["hotel_id"],
+            booking["room_number"],
+            booking["start_date"],
+            booking["end_date"]
+        ))
+
+        conn.commit()
+        return {"message": "Check-in successful.", "renting_id": next_renting_id}
+
+    except Exception as e:
+        conn.rollback()
+        return {"message": f"Error during check-in: {str(e)}"}
+
+    finally:
+        cur.close()
+        conn.close()
 
 # -----READ SECTION-----
+def employee_exists(employee_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT employee_id, full_name, role, hotel_id
+        FROM employee
+        WHERE employee_id = %s
+    """, (employee_id,))
+
+    row = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return row
+
 def get_hotels():
     conn = get_connection()
     cur = conn.cursor()

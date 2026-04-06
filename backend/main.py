@@ -24,7 +24,21 @@ def get_hotels():
         return crud.get_hotels()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/employees/{employee_id}")
+def check_employee(employee_id: int):
+    try:
+        employee = crud.employee_exists(employee_id)
 
+        if not employee:
+            raise HTTPException(status_code=404, detail="Employee ID not found.")
+
+        return employee
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.get("/rooms/available")
 def get_available_rooms(start_date: date, end_date: date):
     try:
@@ -55,6 +69,21 @@ class BookingRequest(BaseModel):
     start_date: date
     end_date: date
 
+@app.get("/bookings")
+def get_all_bookings():
+    try:
+        return crud.get_all_bookings()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/rentings")
+def get_all_rentings():
+    try:
+        return crud.get_all_rentings()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.post("/bookings")
 def create_booking(booking: BookingRequest):
     try:
