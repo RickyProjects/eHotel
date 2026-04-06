@@ -228,13 +228,15 @@ def get_available_rooms(start_date, end_date):
         cur.close()
         conn.close()
 
-def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None, amenity=None, start_date=None, end_date=None):
+def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None, amenity=None, rating=None, start_date=None, end_date=None):
     conn = get_connection()
     cur = conn.cursor()
 
+    #join combines hotel and room since rating is part of the hotel, not the room
     query = """
         SELECT r.*
         FROM room r
+        JOIN hotel h ON r.hotel_id = h.hotel_id
         WHERE r.is_damaged = FALSE
     """
 
@@ -268,6 +270,20 @@ def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None,
         """
         params.append(amenity)
 
+    if rating is not None:
+        query += " AND h.rating = %s"
+        params.append(rating)
+
+    if (start_date is None) != (end_date is None):
+        cur.close()
+        conn.close()
+        return {"message": "Provide both start_date and end_date together."}
+
+    if start_date is not None and end_date is not None and start_date >= end_date:
+        cur.close()
+        conn.close()
+        return {"message": "start_date must be before end_date."}
+
     if start_date is not None and end_date is not None:
         query += """
             AND NOT EXISTS (
@@ -275,7 +291,7 @@ def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None,
                 FROM booking b
                 WHERE b.hotel_id = r.hotel_id
                   AND b.room_number = r.room_number
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status = 'pending'
                   AND b.start_date < %s
                   AND %s < b.end_date
             )
@@ -284,7 +300,6 @@ def get_filtered_rooms(min_price=None, max_price=None, capacity=None, view=None,
                 FROM renting rt
                 WHERE rt.hotel_id = r.hotel_id
                   AND rt.room_number = r.room_number
-                  AND rt.status IN ('confirmed', 'archived')
                   AND rt.start_date < %s
                   AND %s < rt.end_date
             )

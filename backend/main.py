@@ -53,11 +53,21 @@ def get_filter_rooms(
     capacity: str = None,
     view: str = None,
     amenity: str = None,
+    rating: int = None,
     start_date: date = None,
     end_date: date = None
 ):
     try:
-        return crud.get_filtered_rooms(min_price, max_price, capacity, view, amenity, start_date, end_date)
+        return crud.get_filtered_rooms(
+            min_price,
+            max_price,
+            capacity,
+            view,
+            amenity,
+            rating,
+            start_date,
+            end_date
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     

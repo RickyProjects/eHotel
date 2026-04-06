@@ -9,6 +9,7 @@ function HomeSearchPage() {
     max_price: '',
     capacity: '',
     view: '',
+    rating: '',
     start_date: '',
     end_date: '',
   });

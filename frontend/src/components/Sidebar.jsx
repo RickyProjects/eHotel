@@ -29,6 +29,16 @@ function Sidebar({ filters, onChange, onSearch }) {
         <option value="city">city</option>
       </select>
 
+      <label>Rating</label>
+      <select name="rating" value={filters.rating} onChange={onChange}>
+        <option value="">Any</option>
+        <option value="1">1 star</option>
+        <option value="2">2 stars</option>
+        <option value="3">3 stars</option>
+        <option value="4">4 stars</option>
+        <option value="5">5 stars</option>
+      </select>
+
       <label>Start Date</label>
       <input type="date" name="start_date" value={filters.start_date} onChange={onChange} />
 
