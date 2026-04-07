@@ -104,7 +104,7 @@ VALUES
 (1016, 108, 'Harland Ranking', '1911 Alveries Circle, Markham, ON', 'ON-1016-1111', 'service'),
 
 --chain 2
-(2001, 101, 'Emma Folley', '71 Grave Street, Montreal, QC', 'QC-2001-1111', 'manager'),
+(2001, 201, 'Emma Folley', '71 Grave Street, Montreal, QC', 'QC-2001-1111', 'manager'),
 (2002, 201, 'Lucas Gagnon', '88 Rue Ontario, Montreal, QC', 'QC-2002-1111', 'service'),
 (2003, 202, 'Camille Roy', '41 Rue Cartier, Montreal, QC', 'QC-2003-1111', 'manager'),
 (2004, 202, 'Nathan Belanger', '72 Rue Logan, Montreal, QC', 'QC-2004-1111', 'chef'),
@@ -751,7 +751,7 @@ VALUES
 INSERT INTO renting (renting_id, customer_id, hotel_id, room_number, start_date, end_date, checkin_date, status)
 VALUES
 -- chain 1
-(101, 2, 102, 201, '2026-04-02', '2026-04-04', '2026-04-02', 'archived'),
+(101, 2, 102, 201, '2026-04-02', '2026-04-04', '2026-04-02', 'cancelled'),
 (102, 3, 103, 205, '2026-04-03', '2026-04-05', '2026-04-03', 'archived'),
 
 -- chain 2

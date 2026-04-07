@@ -1,13 +1,7 @@
 DROP TRIGGER IF EXISTS trg_check_manager_same_hotel ON hotel;
-DROP TRIGGER IF EXISTS trg_prevent_overlapping_booking ON booking;
-DROP TRIGGER IF EXISTS trg_prevent_overlapping_renting ON renting;
 DROP TRIGGER IF EXISTS trg_check_booking_availability ON booking;
 DROP TRIGGER IF EXISTS trg_check_renting_availability ON renting;
-
-DROP FUNCTION IF EXISTS check_manager_same_hotel();
-DROP FUNCTION IF EXISTS check_booking_availability();
-DROP FUNCTION IF EXISTS check_renting_availability();
-DROP FUNCTION IF EXISTS check_room_availability();
+DROP TRIGGER IF EXISTS trg_one_manager_per_hotel ON employee;
 
 -- Trigger function 1
 CREATE OR REPLACE FUNCTION check_manager_same_hotel()
@@ -41,11 +35,11 @@ BEGIN
         WHERE b.hotel_id = NEW.hotel_id
           AND b.room_number = NEW.room_number
           AND b.booking_id <> NEW.booking_id
-          AND b.status = 'pending'
+          AND b.status IN ('pending', 'confirmed')
           AND b.start_date < NEW.end_date
           AND NEW.start_date < b.end_date
     ) THEN
-        RAISE EXCEPTION 'Room booked.';
+        RAISE EXCEPTION 'Room already booked.';
     END IF;
 
     IF EXISTS (
@@ -53,6 +47,7 @@ BEGIN
         FROM renting r
         WHERE r.hotel_id = NEW.hotel_id
           AND r.room_number = NEW.room_number
+          AND r.status IN ('pending', 'confirmed')
           AND r.start_date < NEW.end_date
           AND NEW.start_date < r.end_date
     ) THEN
@@ -72,11 +67,11 @@ BEGIN
         FROM booking b
         WHERE b.hotel_id = NEW.hotel_id
           AND b.room_number = NEW.room_number
-          AND b.status = 'pending'
+          AND b.status IN ('pending', 'confirmed')
           AND b.start_date < NEW.end_date
           AND NEW.start_date < b.end_date
     ) THEN
-        RAISE EXCEPTION 'Room booked.';
+        RAISE EXCEPTION 'Room already booked.';
     END IF;
 
     IF EXISTS (
@@ -85,12 +80,33 @@ BEGIN
         WHERE r.hotel_id = NEW.hotel_id
           AND r.room_number = NEW.room_number
           AND r.renting_id <> NEW.renting_id
+          AND r.status IN ('pending', 'confirmed')
           AND r.start_date < NEW.end_date
           AND NEW.start_date < r.end_date
     ) THEN
         RAISE EXCEPTION 'Room already rented.';
     END IF;
 
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger function 4
+
+CREATE OR REPLACE FUNCTION check_one_manager_per_hotel()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.role = 'manager' THEN
+        IF EXISTS (
+            SELECT 1
+            FROM employee e
+            WHERE hotel_id = NEW.hotel_id
+                AND e.role = 'manager'
+                AND e.employee_id <> NEW.employee_id
+        ) THEN
+            RAISE EXCEPTION 'This Hotel already has a manager.';
+        END IF;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -107,6 +123,7 @@ CREATE TRIGGER trg_check_booking_availability
 BEFORE INSERT OR UPDATE
 ON booking
 FOR EACH ROW
+WHEN (NEW.status IN ('pending','confirmed'))
 EXECUTE FUNCTION check_booking_availability();
 
 -- Trigger definition 3
@@ -114,4 +131,12 @@ CREATE TRIGGER trg_check_renting_availability
 BEFORE INSERT OR UPDATE
 ON renting
 FOR EACH ROW
+WHEN (NEW.status IN ('pending','confirmed'))
 EXECUTE FUNCTION check_renting_availability();
+
+CREATE TRIGGER trg_one_manager_per_hotel
+BEFORE INSERT OR UPDATE OF hotel_id, role
+ON employee
+FOR EACH ROW 
+WHEN (NEW.role = 'manager')
+EXECUTE FUNCTION check_one_manager_per_hotel();
